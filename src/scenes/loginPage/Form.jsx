@@ -30,7 +30,18 @@ const loginSchema = yup.object().shape({
   email: yup.string().email("invalid email").required("required"),
   password: yup.string().required("required"),
 });
-
+const convertToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const fileReader = new FileReader();
+    fileReader.readAsDataURL(file);
+    fileReader.onload = () => {
+      resolve(fileReader.result);
+    };
+    fileReader.onerror = (error) => {
+      reject(error);
+    };
+  });
+};
 const initialValuesRegister = {
   firstName: "",
   lastName: "",
@@ -61,8 +72,8 @@ const Form = () => {
     for (let value in values) {
       formData.append(value, values[value]);
     }
-    formData.append("picturePath", values.picture.name);
-
+    formData.append("picturePath", values.picture);
+    console.log(formData);
     const savedUserResponse = await fetch(
       "https://sociopedia-backend.vercel.app/auth/register",
       {
@@ -102,6 +113,13 @@ const Form = () => {
     if (isRegister) await register(values, onSubmitProps);
   };
 
+  const [img, setImg] = useState("")
+  const handleFileUpload = async (file) => {
+    // const file = e.target.files[0];
+    const base64 = await convertToBase64(file);
+    setImg(base64);
+    // setPostImage({ ...postImage, myFile: base64 });
+  };
   return (
     <Formik
       onSubmit={handleFormSubmit}
@@ -182,8 +200,10 @@ const Form = () => {
                   <Dropzone
                     acceptedFiles=".jpg,.jpeg,.png"
                     multiple={false}
-                    onDrop={(acceptedFiles) =>
-                      setFieldValue("picture", acceptedFiles[0])
+                    onDrop={async(acceptedFiles) => {
+                      await handleFileUpload(acceptedFiles[0])
+                      setFieldValue("picture", img)
+                    }
                     }
                   >
                     {({ getRootProps, getInputProps }) => (
